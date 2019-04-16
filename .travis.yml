@@ -3,6 +3,7 @@ dist: xenial
 language: python
 python:
   - "3.7"
+
 branches:
   only:
     - master
@@ -15,5 +16,8 @@ install:
   - docker pull localstack/localstack
   - pip install -r requirements.txt
 
+env:
+  - ANSIBLE_STDOUT_CALLBACK=debug
+
 script:
-  - molecule --debug test
+  - molecule test
