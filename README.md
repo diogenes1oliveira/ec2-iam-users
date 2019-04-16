@@ -1,5 +1,7 @@
 # ec2-iam-users
 
+[![Build Status](https://travis-ci.org/diogenes1oliveira/ec2-iam-users.svg?branch=master)](https://travis-ci.org/diogenes1oliveira/ec2-iam-users)
+
 Ansible role to provide IAM based SSH access to EC2 instances, altogether with
 autosyncing via Lambda
 
