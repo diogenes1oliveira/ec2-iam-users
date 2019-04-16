@@ -1,0 +1,16 @@
+---
+# tasks file for ec2-iam-users
+
+- name: Assure essential packages are installed
+  yum:
+    name:
+      - awscli
+      - jq
+      - util-linux
+    state: present
+
+- name: Install the script to fetch the public keys from IAM
+  template:
+    src: "fetch-public-keys-from-iam.sh"
+    dest: "/usr/bin/fetch-public-keys-from-iam"
+    mode: 0755

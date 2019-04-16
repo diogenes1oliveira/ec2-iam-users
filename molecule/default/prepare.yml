@@ -1,0 +1,26 @@
+---
+- name: Prepare
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Create the network
+      docker_network:
+        name: ec2-iam-users-network
+        state: present
+
+    - name: Spin up the localstack container
+      docker_container:
+        name: ec2-iam-users-localstack
+        auto_remove: true
+        cleanup: true
+        detach: true
+        recreate: true
+        state: started
+        image: localstack/localstack
+        env:
+          SERVICES: iam
+          HOSTNAME_EXTERNAL: localstack
+          DEFAULT_REGION: sa-east-1
+          DEBUG: "1"
+        networks:
+          - name: ec2-iam-users-network

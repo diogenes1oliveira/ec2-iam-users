@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  author: Diógenes Oliveira
+  description: Full Stack Developer
+
+  license: MIT
+
+  min_ansible_version: 1.2
+
+  platforms:
+    - name: Amazon Linux
+      versions:
+        - "2"
+
+  galaxy_tags:
+    - aws
+    - ec2
+    - iam
+    - ssh
+
+dependencies: []

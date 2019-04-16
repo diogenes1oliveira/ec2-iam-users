@@ -1,0 +1,14 @@
+---
+- name: Clean up
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Destroy the localstack container
+      docker_container:
+        name: ec2-iam-users-localstack
+        state: absent
+
+    - name: Destroy the network
+      docker_network:
+        name: ec2-iam-users-network
+        state: absent

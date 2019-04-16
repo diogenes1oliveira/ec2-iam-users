@@ -1,0 +1,14 @@
+---
+# defaults file for linux-iam-users
+
+iam_group: devs
+# Name of the group to fetch the users from
+
+linux_group: devs
+# Name of the Linux group that the users will belong to
+
+max_ssh_keys: 5
+# Max number of SSH public keys to fetch from IAM
+
+region: sa-east-1
+# Default AWS region

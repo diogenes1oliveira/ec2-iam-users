@@ -1,0 +1,25 @@
+---
+dependency:
+  name: galaxy
+
+driver:
+  name: docker
+
+lint:
+  name: yamllint
+
+platforms:
+  - name: ec2-iam-users-instance
+    image: amazonlinux:2
+    networks:
+      - name: ec2-iam-users-network
+
+provisioner:
+  name: ansible
+  lint:
+    name: ansible-lint
+
+verifier:
+  name: testinfra
+  lint:
+    name: flake8
