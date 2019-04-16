@@ -1,0 +1,19 @@
+---
+# Converted from https://github.com/joshuamkite/ansible-role-aws-ecs-iam-users-tags/blob/b531a672099098bf2b5005ea85dad3cf2a31413a/iam_ssh_policy.json
+
+Version: "2012-10-17"
+Statement:
+  - Effect: Allow
+    Action:
+      - iam:ListUsers
+      - iam:GetGroup
+    Resource: "*"
+  - Effect: Allow
+    Action:
+      - iam:GetSSHPublicKey
+      - iam:ListSSHPublicKeys
+    Resource:
+      - arn:aws:iam::<YOUR_USERS_ACCOUNT_ID_HERE>:user/*
+  - Effect: Allow
+    Action: ec2:DescribeTags
+    Resource: "*"

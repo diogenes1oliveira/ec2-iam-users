@@ -1,14 +1,14 @@
 ---
 # tasks file for ec2-iam-users
 
-- name: Enable the extra repo
+- name: Enable the epel-relase repo
   yum:
     name: epel-release
     state: present
   ignore_errors: true
   register: epel_repo
 
-- name: If I'm on Amazon Linux
+- name: Fallback for epel-release on Amazon Linux
   command: amazon-linux-extras install -y epel
   when: epel_repo is failed
 
