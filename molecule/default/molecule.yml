@@ -9,7 +9,20 @@ lint:
   name: yamllint
 
 platforms:
-  - name: ec2-iam-users-instance
+  - name: ec2-iam-users-ssh-instance
+    groups:
+      - ssh
+    image: jdeathe/centos-ssh
+    networks:
+      - name: ec2-iam-users-network
+    published_ports:
+      - "32768:22"
+    env:
+      SSH_USER_PASSWORD: "password"
+      SSH_PASSWORD_AUTHENTICATION: "true"
+      SSH_SUDO: "ALL=(ALL) NOPASSWD:ALL"
+
+  - name: ec2-iam-users-amazon-instance
     image: amazonlinux:2
     networks:
       - name: ec2-iam-users-network

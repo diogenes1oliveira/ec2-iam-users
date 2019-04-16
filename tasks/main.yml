@@ -1,13 +1,29 @@
 ---
 # tasks file for ec2-iam-users
 
-- name: Assure essential packages are installed
+- name: Enable the extra repo
+  yum:
+    name: epel-release
+    state: present
+  ignore_errors: true
+  register: epel_repo
+
+- name: If I'm on Amazon Linux
+  command: amazon-linux-extras install -y epel
+  when: epel_repo is failed
+
+- name: Assure essential system packages are installed
   yum:
     name:
-      - awscli
       - jq
+      - python-pip
       - util-linux
     state: present
+
+- name: Assure essential PIP packages are installed
+  pip:
+    name:
+      - awscli
 
 - name: Install the script to fetch the public keys from IAM
   template:
