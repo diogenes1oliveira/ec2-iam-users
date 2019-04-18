@@ -16,6 +16,7 @@
   yum:
     name:
       - jq
+      - openssh-server
       - python-pip
       - util-linux
     state: present
@@ -25,8 +26,32 @@
     name:
       - awscli
 
-- name: Install the script to fetch the public keys from IAM
+- name: Enable fetching the public keys from IAM
   template:
     src: "fetch-public-keys-from-iam.sh"
     dest: "/usr/bin/fetch-public-keys-from-iam"
     mode: 0755
+
+- name: Authorize SSH via IAM public keys
+  template:
+    src: "ssh-authorize-via-iam.sh"
+    dest: "/usr/bin/ssh-authorize-via-iam"
+    mode: 0755
+
+- name: Create the group for the IAM users
+  group:
+    name: "{{ linux_group }}"
+    state: present
+
+- name: Copy the sshd_config file
+  copy:
+    src: sshd_config
+    dest: /etc/ssh/sshd_config
+    mode: 0644
+  register: sshd_config
+
+- name: Restart the SSH service if needed
+  systemd:
+    name: sshd
+    state: restarted
+  when: sshd_config is changed and 'no-systemd' not in group_names

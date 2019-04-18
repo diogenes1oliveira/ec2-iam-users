@@ -14,11 +14,10 @@ services:
 
 install:
   - docker pull localstack/localstack
-  - docker pull jdeathe/centos-ssh
+  - docker pull solita/centos-systemd-ssh
+  - docker pull amazonlinux:2
   - pip install -r requirements.txt
-
-env:
-  - ANSIBLE_STDOUT_CALLBACK=debug
+  - apt-get install -y openssh-client
 
 script:
   - molecule test

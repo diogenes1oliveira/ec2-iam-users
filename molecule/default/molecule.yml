@@ -12,25 +12,34 @@ platforms:
   - name: ec2-iam-users-ssh-instance
     groups:
       - ssh
-    image: jdeathe/centos-ssh
+    image: solita/centos-systemd-ssh
+    override_command: false
+    security_opts:
+      - seccomp=unconfined
+    tmpfs:
+      - /run
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+
     networks:
       - name: ec2-iam-users-network
     published_ports:
       - "32768:22"
-    env:
-      SSH_USER_PASSWORD: "password"
-      SSH_PASSWORD_AUTHENTICATION: "true"
-      SSH_SUDO: "ALL=(ALL) NOPASSWD:ALL"
 
   - name: ec2-iam-users-amazon-instance
     image: amazonlinux:2
     networks:
       - name: ec2-iam-users-network
+    groups:
+      - no-systemd
 
 provisioner:
   name: ansible
   options:
     v: true
+  config_options:
+    defaults:
+      stdout_callback: debug
   lint:
     name: ansible-lint
 
