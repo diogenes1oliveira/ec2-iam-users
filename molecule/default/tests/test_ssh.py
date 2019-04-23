@@ -3,7 +3,6 @@ from collections import namedtuple
 from contextlib import contextmanager, ExitStack
 import os
 from pathlib import Path
-from shlex import quote
 import subprocess
 import tempfile
 from uuid import uuid4
@@ -26,21 +25,20 @@ def ssh_run(*args, user, key, host='localhost', port=32768):
     if not key:
         raise ValueError('keyfile is required')
 
-    client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    client.connect(
-        hostname=host,
-        username=user,
-        key_filename=str(key),
-        port=port,
-    )
-    try:
-        cmd = ' '.join(quote(arg) for arg in (args or ['whoami']))
-        stdin, stdout, stderr = client.exec_command(cmd)
-        rc = stdin.channel.recv_exit_status()
-        return SSHResult(rc, stdout.read(), stderr.read())
-    finally:
-        client.close()
+    ssh_args = [
+        'ssh',
+        '-o', 'StrictHostKeyChecking=no',
+        '-o', 'UserKnownHostsFile=/dev/null',
+        '-i', str(key),
+        '-p', str(port),
+        f'{user}@{host}',
+    ]
+    args = args or ['whoami']
+    process = subprocess.run(ssh_args + args,
+                             encoding='utf-8', capture_output=True)
+    if 'Permission denied' in process.stderr:
+        raise paramiko.ssh_exception.AuthenticationException
+    return SSHResult(process.returncode, process.stdout, process.stderr)
 
 
 @contextmanager
@@ -48,11 +46,11 @@ def temp_ssh_keys():
     with tempfile.TemporaryDirectory() as tempdir:
         key1 = Path(tempdir) / 'key1'
         pub1 = key1.with_suffix('.pub')
-        subprocess.run(['ssh-keygen', '-N', '', '-f', key1])
+        subprocess.run(['ssh-keygen', '-N', '', '-f', key1], check=True)
 
         key2 = Path(tempdir) / 'key2'
         pub2 = key2.with_suffix('.pub')
-        subprocess.run(['ssh-keygen', '-N', '', '-f', key2])
+        subprocess.run(['ssh-keygen', '-N', '', '-f', key2], check=True)
 
         with open(str(pub2)) as f2, open(str(pub1)) as f1:
             yield (key1, f1.read(), key2, f2.read())

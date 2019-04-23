@@ -14,6 +14,7 @@ CODES = {
     2: 'API_ERROR',
     4: 'NOT_FOUND',
     8: 'NO_KEYS',
+    16: 'MISSING_REQUIREMENTS',
 }
 
 
