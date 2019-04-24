@@ -5,3 +5,5 @@
     - role: ec2-iam-users
       region: sa-east-1
       linux_group: ssh_iam
+      users:
+        - user1

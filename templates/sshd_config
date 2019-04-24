@@ -19,10 +19,10 @@
 #ListenAddress 0.0.0.0
 #ListenAddress ::
 
-HostKey /etc/ssh/ssh_host_rsa_key
+HostKey "{{ host_key_path }}"
 #HostKey /etc/ssh/ssh_host_dsa_key
-HostKey /etc/ssh/ssh_host_ecdsa_key
-HostKey /etc/ssh/ssh_host_ed25519_key
+#HostKey /etc/ssh/ssh_host_ecdsa_key
+#HostKey /etc/ssh/ssh_host_ed25519_key
 
 # Ciphers and keying
 #RekeyLimit default none
@@ -30,14 +30,12 @@ HostKey /etc/ssh/ssh_host_ed25519_key
 # Logging
 #SyslogFacility AUTH
 SyslogFacility AUTHPRIV
-#LogLevel INFO
+LogLevel VERBOSE
 
 # Authentication:
 
 #LoginGraceTime 2m
-#PermitRootLogin yes
-# Only allow root to run commands over ssh, no shell
-PermitRootLogin forced-commands-only
+PermitRootLogin no
 #StrictModes yes
 #MaxAuthTries 6
 #MaxSessions 10
@@ -46,7 +44,7 @@ PubkeyAuthentication yes
 
 # The default is to check both .ssh/authorized_keys and .ssh/authorized_keys2
 # but this is overridden so installations will only check .ssh/authorized_keys
-AuthorizedKeysFile .ssh/authorized_keys
+#AuthorizedKeysFile .ssh/authorized_keys
 
 #AuthorizedPrincipalsFile none
 
@@ -59,7 +57,8 @@ AuthorizedKeysCommandUser nobody
 # HostbasedAuthentication
 #IgnoreUserKnownHosts no
 # Don't read the user's ~/.rhosts and ~/.shosts files
-#IgnoreRhosts yes
+IgnoreRhosts yes
+# HashKnownHosts yes
 
 # EC2 uses keys for remote access
 PasswordAuthentication no
@@ -99,7 +98,7 @@ UsePAM yes
 #AllowAgentForwarding yes
 #AllowTcpForwarding yes
 #GatewayPorts no
-X11Forwarding yes
+X11Forwarding no
 #X11DisplayOffset 10
 #X11UseLocalhost yes
 #PermitTTY yes
@@ -110,8 +109,8 @@ PrintLastLog yes
 UsePrivilegeSeparation sandbox
 #PermitUserEnvironment no
 #Compression delayed
-#ClientAliveInterval 0
-#ClientAliveCountMax 3
+ClientAliveInterval 300
+ClientAliveCountMax 2
 #ShowPatchLevel no
 #UseDNS yes
 #PidFile /var/run/sshd.pid
@@ -120,8 +119,7 @@ UsePrivilegeSeparation sandbox
 #ChrootDirectory none
 #VersionAddendum none
 
-# no default banner path
-#Banner none
+Banner /etc/issue.net
 
 # Accept locale-related environment variables
 AcceptEnv LANG LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
@@ -138,3 +136,5 @@ Subsystem sftp  /usr/libexec/openssh/sftp-server
 #       AllowTcpForwarding no
 #       PermitTTY no
 #       ForceCommand cvs server
+
+AllowGroups {{ linux_group }} {{ protected_users_group }}

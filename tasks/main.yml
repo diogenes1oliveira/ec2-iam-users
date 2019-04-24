@@ -38,20 +38,135 @@
     dest: "/usr/bin/ssh-authorize-via-iam"
     mode: 0755
 
-- name: Create the group for the IAM users
-  group:
-    name: "{{ linux_group }}"
-    state: present
+- name: Copy the pre-auth banner
+  copy:
+    src: issue.net
+    dest: /etc/issue.net
+    mode: 0644
 
 - name: Copy the sshd_config file
-  copy:
+  template:
     src: sshd_config
     dest: /etc/ssh/sshd_config
     mode: 0644
   register: sshd_config
 
+- name: Create the host RSA key
+  command: ssh-keygen -b 2048 -t rsa -f {{ host_key_path | quote }} -q -N ""
+  args:
+    creates: "{{ host_key_path }}"
+
+- name: Test the configuration file
+  command: sshd -t
+  when: sshd_config is changed
+
 - name: Restart the SSH service if needed
   systemd:
     name: sshd
-    state: restarted
+    state: reloaded
   when: sshd_config is changed and 'no-systemd' not in group_names
+
+- name: Create the group for the IAM users
+  group:
+    name: "{{ linux_group }}"
+    state: present
+
+- name: Grab UID ranges
+  shell: |
+    set -o pipefail
+    cat /etc/login.defs | egrep '^(UID_MIN|UID_MAX)\s+[0-9]+\s*$' | awk '{print $2}'
+  changed_when: false
+  register: uid_range
+
+- name: Set UID range endpoints as facts
+  set_fact:
+    uid_min: "{{ uid_range.stdout_lines | map('int') | min }}"
+    uid_max: "{{ uid_range.stdout_lines | map('int') | max }}"
+
+- name: Get current protected users
+  shell: |
+    set -o pipefail
+    PROTECTED_USERS=$( \
+      echo {{ protected_users | join("\n") | quote }} | \
+      sed "s/^/ -e '\^/; s/\$/\\\$'/" \
+    )
+    cat /etc/passwd | awk -F':' '{print $1}' | grep $PROTECTED_USERS || true
+  changed_when: false
+  register: existing_protected_users
+
+- name: Fetch existing users in the group
+  shell: |
+    set -o pipefail
+    USERS_IN_GROUP=$(grep {{ linux_group | quote }} /etc/group | cut -d':' -f4 | tr "," "\n")
+    for u in "$USERS_IN_GROUP"; do
+      test -z "$USER_NAME" && continue
+      USER_ID=$(id -u "$USER_ID")
+      test $? != 0 && echo "failed to grab UID of $USER_ID" >&2 && exit 1
+
+      if [[ "$USER_ID" < {{ uid_min | quote }} || "$USER_ID" > {{ uid_max | quote }} ]]; then
+        echo "User $USER_NAME is a system user" >&2
+      else
+        echo {{ protected_users | join("\n") | quote }} | grep "^${USER_NAME}$"
+        if [[ $? == 0 ]]; then
+          echo "$USER_NAME is a protected user" >&2
+        else
+          echo "$USER_NAME"
+        fi
+      fi
+    done
+  args:
+    executable: /bin/bash
+  changed_when: false
+  register: existing_users
+
+- name: Filter out the protected users or those outside the UID range
+  shell: |
+    set -o pipefail
+    for USER_NAME in {{ users | join("\n") | quote }}; do
+      test -z "$USER_NAME" && continue
+      echo {{ protected_users | join("\n") | quote }} | grep "^${USER_NAME}$" > /dev/null
+      if [[ $? == 0 ]]; then
+        echo "$USER_NAME is a protected user" >&2
+        continue
+      fi
+
+      USER_ID=$(id -u "$USER_NAME")
+      if [[ "$?" != 0 ]]; then
+        echo "failed to grab UID of $USER_ID" >&2
+        echo "$USER_NAME"
+      elif [[ "$USER_ID" < {{ uid_min | quote }} || "$USER_ID" > {{ uid_max | quote }} ]]; then
+        echo "User $USER_NAME is a system user" >&2
+      else
+        echo "$USER_NAME"
+      fi
+    done
+  changed_when: false
+  register: managed_users
+
+- name: Assure the protected users can SSH
+  user:
+    name: "{{ item }}"
+    groups:
+      - "{{ protected_users_group }}"
+    append: true
+  with_items:
+    - "{{ existing_protected_users.stdout_lines }}"
+
+- name: Create the users
+  user:
+    name: "{{ item }}"
+    group: "{{ linux_group }}"
+    groups:
+      - "{{ linux_group }}"
+    append: true
+    create_home: true
+    state: present
+  with_items:
+    - "{{ managed_users.stdout_lines }}"
+
+- name: Destroy the unspecified users
+  user:
+    name: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{ existing_users.stdout_lines | difference(managed_users.stdout_lines) }}"

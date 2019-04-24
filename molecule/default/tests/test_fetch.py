@@ -12,6 +12,7 @@ testinfra_hosts = testinfra.utils.ansible_runner.AnsibleRunner(
 
 def test_invalid_parameters(shell):
     cmd = shell('fetch-public-keys-from-iam', 'invalid user name', ** ENV)
+    print(cmd)
     assert 'Unable to locate credentials' not in cmd.stdout
     assert CODES[cmd.rc] == 'BAD_VALUE'
 

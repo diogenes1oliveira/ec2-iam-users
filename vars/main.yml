@@ -2,3 +2,7 @@
 # vars file for linux-iam-users
 
 ansible_become: true
+
+host_key_path: /etc/ssh/ssh_host_rsa_key
+
+protected_users_group: protected-users

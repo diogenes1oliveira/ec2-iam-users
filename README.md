@@ -39,6 +39,25 @@ max_ssh_keys: 5
 
 region: sa-east-1
 # Default AWS region
+
+protected_users: # those users will never be touched
+  - ec2-user
+  - ubuntu
+
+users: [] # list of users to assure existence
+```
+
+```yaml
+# vars/main.yml
+
+ansible_become: true
+# Become root to run the commands
+
+host_key_path: /etc/ssh/ssh_host_rsa_key
+# Where to store the keys that identify the host
+
+protected_users_group: protected-users
+# group the protected users will belong to
 ```
 
 ## Example Playbook

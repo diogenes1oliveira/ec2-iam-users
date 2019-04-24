@@ -1,16 +1,14 @@
 from base64 import b64decode
 from collections import namedtuple
-from contextlib import contextmanager, ExitStack
+from contextlib import contextmanager
 import os
 from pathlib import Path
 import subprocess
 import tempfile
-from uuid import uuid4
 
 import paramiko
 import pytest
 import testinfra.utils.ansible_runner
-
 
 testinfra_hosts = testinfra.utils.ansible_runner.AnsibleRunner(
     os.environ['MOLECULE_INVENTORY_FILE']).get_hosts('all')
@@ -73,21 +71,12 @@ def test_happy_path(host, shell, ansibler):
         pytest.skip('host is not in ssh group')
         return
 
-    user = 'u' + str(uuid4())[:8]
-    with ExitStack() as stack:
-        cmd = ansibler('user', name=user, state='present')
-        assert not cmd.get('failed')
-        stack.callback(ansibler, 'user', name=user, state='absent')
+    user = 'user1'
+    with temp_ssh_keys() as keys:
+        key1, pub1, key2, pub2 = keys
+        fetcher = f'echo "{pub1}"'
 
-        cmd = ansibler('user', name=user, state='present',
-                       groups=['ssh_iam'])
-        assert not cmd.get('failed')
-
-        with temp_ssh_keys() as keys:
-            key1, pub1, key2, pub2 = keys
-            fetcher = f'echo "{pub1}"'
-
-            with temp_content(ansibler, '/usr/bin/fetch-public-keys-from-iam', fetcher):
-                ssh_run(user=user, key=key1)
-                with pytest.raises(paramiko.ssh_exception.AuthenticationException):
-                    ssh_run(user=user, key=key2)
+        with temp_content(ansibler, '/usr/bin/fetch-public-keys-from-iam', fetcher):
+            ssh_run(user=user, key=key1)
+            with pytest.raises(paramiko.ssh_exception.AuthenticationException):
+                ssh_run(user=user, key=key2)

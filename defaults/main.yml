@@ -12,3 +12,11 @@ max_ssh_keys: 5
 
 region: sa-east-1
 # Default AWS region
+
+protected_users:
+  - ec2-user
+  - ubuntu
+# Those users will never be touched
+
+users: []
+# List of users to assure existence
