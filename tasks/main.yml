@@ -98,10 +98,10 @@
   shell: |
     set -o pipefail
     USERS_IN_GROUP=$(grep {{ linux_group | quote }} /etc/group | cut -d':' -f4 | tr "," "\n")
-    for u in "$USERS_IN_GROUP"; do
+    for USER_NAME in "$USERS_IN_GROUP"; do
       test -z "$USER_NAME" && continue
       USER_ID=$(id -u "$USER_ID")
-      test $? != 0 && echo "failed to grab UID of $USER_ID" >&2 && exit 1
+      test $? != 0 && echo "failed to grab UID of $USER_NAME" >&2 && exit 1
 
       if [[ "$USER_ID" < {{ uid_min | quote }} || "$USER_ID" > {{ uid_max | quote }} ]]; then
         echo "User $USER_NAME is a system user" >&2
@@ -132,7 +132,7 @@
 
       USER_ID=$(id -u "$USER_NAME")
       if [[ "$?" != 0 ]]; then
-        echo "failed to grab UID of $USER_ID" >&2
+        echo "failed to grab UID of $USER_NAME" >&2
         echo "$USER_NAME"
       elif [[ "$USER_ID" < {{ uid_min | quote }} || "$USER_ID" > {{ uid_max | quote }} ]]; then
         echo "User $USER_NAME is a system user" >&2
