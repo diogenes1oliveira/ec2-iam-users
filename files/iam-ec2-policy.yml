@@ -12,8 +12,7 @@ Statement:
     Action:
       - iam:GetSSHPublicKey
       - iam:ListSSHPublicKeys
-    Resource:
-      - arn:aws:iam::<YOUR_USERS_ACCOUNT_ID_HERE>:user/*
+    Resource: "*"
   - Effect: Allow
     Action: ec2:DescribeTags
     Resource: "*"

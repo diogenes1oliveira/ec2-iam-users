@@ -1,0 +1,30 @@
+---
+dependency:
+  name: galaxy
+
+driver:
+  name: ec2
+
+lint:
+  name: yamllint
+
+platforms:
+  - name: molecule-instance
+    instance_type: t2.micro
+
+provisioner:
+  name: ansible
+  options:
+    v: true
+  config_options:
+    defaults:
+      stdout_callback: debug
+  lint:
+    name: ansible-lint
+  ansible_args:
+    - -vvvvv
+
+verifier:
+  name: testinfra
+  lint:
+    name: flake8

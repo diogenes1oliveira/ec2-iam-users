@@ -77,12 +77,12 @@ aws-iam-cmd() {
 }
 
 check-requirements() {
-  if ! jq --version; then
+  if ! jq --version > /dev/null; then
     echo "Couldn't find jq. Is it installed and available in the \$PATH?" >&2
     exit $MISSING_REQUIREMENTS
   fi
   
-  if ! aws --version; then
+  if ! aws --version > /dev/null; then
     echo "Couldn't find aws. Is it installed and available in the \$PATH?" >&2
     exit $MISSING_REQUIREMENTS
   fi

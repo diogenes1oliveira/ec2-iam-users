@@ -6,4 +6,5 @@
       region: sa-east-1
       linux_group: ssh_iam
       users:
-        - user1
+        - linux_user_1
+        - linux_user_2

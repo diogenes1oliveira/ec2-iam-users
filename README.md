@@ -12,7 +12,7 @@ This role was originally inspired by this Medium post
 
 - The EC2 instances must be using YUM-derived Linux AMIs.
 - A minimum set of policies that must be attached to the instances is given in
-  [iam-ec2-policy.yml](iam-ec2-policy.yml)
+  [iam-ec2-policy.yml](files/iam-ec2-policy.yml)
 
 ## Controller Requirements
 

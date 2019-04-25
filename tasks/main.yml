@@ -56,6 +56,35 @@
   args:
     creates: "{{ host_key_path }}"
 
+- name: Get current protected users
+  shell: |
+    set -o pipefail
+    cat /etc/passwd | \
+      awk -F':' '{print $1}' | \
+      grep -e '^{{ protected_users | join("$' -e '^") }}$' || \
+      true
+  changed_when: false
+  register: existing_protected_users
+
+- name: Fail if the current user is not a protected one
+  fail:
+    msg: "Protected users: {{ existing_protected_users.stdout_lines }}"
+  when: ansible_ssh_user not in existing_protected_users.stdout_lines
+
+- name: Create the group for the protected users
+  group:
+    name: "{{ protected_users_group }}"
+    state: present
+
+- name: Assure the protected users can SSH
+  user:
+    name: "{{ item }}"
+    groups:
+      - "{{ protected_users_group }}"
+    append: true
+  with_items:
+    - "{{ existing_protected_users.stdout_lines }}"
+
 - name: Test the configuration file
   command: sshd -t
   when: sshd_config is changed
@@ -83,29 +112,21 @@
     uid_min: "{{ uid_range.stdout_lines | map('int') | min }}"
     uid_max: "{{ uid_range.stdout_lines | map('int') | max }}"
 
-- name: Get current protected users
-  shell: |
-    set -o pipefail
-    PROTECTED_USERS=$( \
-      echo {{ protected_users | join("\n") | quote }} | \
-      sed "s/^/ -e '\^/; s/\$/\\\$'/" \
-    )
-    cat /etc/passwd | awk -F':' '{print $1}' | grep $PROTECTED_USERS || true
-  changed_when: false
-  register: existing_protected_users
-
 - name: Fetch existing users in the group
   shell: |
     set -o pipefail
     USERS_IN_GROUP=$(grep {{ linux_group | quote }} /etc/group | cut -d':' -f4 | tr "," "\n")
+    echo "USERS_IN_GROUP =>" "$USERS_IN_GROUP" "<=" >&2
+
     for USER_NAME in "$USERS_IN_GROUP"; do
       test -z "$USER_NAME" && continue
-      USER_ID=$(id -u "$USER_ID")
-      test $? != 0 && echo "failed to grab UID of $USER_NAME" >&2 && exit 1
+      USER_ID=$(id -u "$USER_NAME")
+      test $? != 0 && echo "failed to grab UID of $USER_NAME" >&2 && continue
 
-      if [[ "$USER_ID" < {{ uid_min | quote }} || "$USER_ID" > {{ uid_max | quote }} ]]; then
+      if [[ "$USER_ID" < {{ uid_min | quote }} ]] || [[ "$USER_ID" > {{ uid_max | quote }} ]]; then
         echo "User $USER_NAME is a system user" >&2
       else
+        echo "Protected users =>" {{ protected_users | join("\n") | quote }} >&2
         echo {{ protected_users | join("\n") | quote }} | grep "^${USER_NAME}$"
         if [[ $? == 0 ]]; then
           echo "$USER_NAME is a protected user" >&2
@@ -122,9 +143,12 @@
 - name: Filter out the protected users or those outside the UID range
   shell: |
     set -o pipefail
-    for USER_NAME in {{ users | join("\n") | quote }}; do
+    echo "Usernames =>" {{ users | map('quote') | join(" ") }} "<=" >&2
+
+    for USER_NAME in {{ users | map('quote') | join(" ") }}; do
       test -z "$USER_NAME" && continue
-      echo {{ protected_users | join("\n") | quote }} | grep "^${USER_NAME}$" > /dev/null
+      echo "Protected users =>" {{ protected_users | join("\n") | quote }} >&2
+      echo {{ protected_users | join("\n") | quote }} | grep "^${USER_NAME}$" >&2
       if [[ $? == 0 ]]; then
         echo "$USER_NAME is a protected user" >&2
         continue
@@ -134,7 +158,7 @@
       if [[ "$?" != 0 ]]; then
         echo "failed to grab UID of $USER_NAME" >&2
         echo "$USER_NAME"
-      elif [[ "$USER_ID" < {{ uid_min | quote }} || "$USER_ID" > {{ uid_max | quote }} ]]; then
+      elif [[ "$USER_ID" < {{ uid_min | quote }} ]] || [[ "$USER_ID" > {{ uid_max | quote }} ]]; then
         echo "User $USER_NAME is a system user" >&2
       else
         echo "$USER_NAME"
@@ -142,15 +166,6 @@
     done
   changed_when: false
   register: managed_users
-
-- name: Assure the protected users can SSH
-  user:
-    name: "{{ item }}"
-    groups:
-      - "{{ protected_users_group }}"
-    append: true
-  with_items:
-    - "{{ existing_protected_users.stdout_lines }}"
 
 - name: Create the users
   user:

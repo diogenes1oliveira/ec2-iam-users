@@ -1,0 +1,85 @@
+---
+- name: Destroy
+  hosts: localhost
+  connection: local
+  no_log: "{{ not (lookup('env', 'MOLECULE_DEBUG') | bool or molecule_yml.provisioner.log|default(false) | bool) }}"
+  vars:
+    aws_region: "{{ region | d('us-east-2') }}"
+    security_group_name: molecule
+    keypair_path: "{{ lookup('env', 'MOLECULE_EPHEMERAL_DIRECTORY') }}/ssh_key"
+  tasks:
+    - name: Generate the key pair name
+      set_fact:
+        keypair_name: molecule_key_{{ ansible_hostname | to_uuid }}
+
+    - block:
+        - name: Populate instance config
+          set_fact:
+            instance_conf: "{{ lookup('file', molecule_instance_config) | molecule_from_yaml }}"
+            skip_instances: false
+      rescue:
+        - name: Populate instance config when file missing
+          set_fact:
+            instance_conf: {}
+            skip_instances: true
+
+    - name: Destroy molecule instance(s)
+      ec2:
+        state: absent
+        instance_ids: "{{ item.instance_ids }}"
+        region: "{{ aws_region }}"
+      register: server
+      with_items: "{{ instance_conf }}"
+      when: not skip_instances
+      async: 7200
+      poll: 0
+
+    - name: Wait for instance(s) deletion to complete
+      async_status:
+        jid: "{{ item.ansible_job_id }}"
+      register: ec2_jobs
+      until: ec2_jobs.finished
+      retries: 300
+      with_items: "{{ server.results }}"
+
+    - name: Destroy the security group
+      ec2_group:
+        name: "{{ security_group_name }}"
+        region: "{{ aws_region }}"
+        state: absent
+      register: group_deletion
+      until: group_deletion is not failed
+      delay: 5
+      retries: 3
+
+    - name: Destroy the key pair
+      ec2_key:
+        name: "{{ keypair_name }}"
+        region: "{{ aws_region }}"
+        state: absent
+
+    - name: Destroy the policy
+      iam_policy:
+        iam_name: MoleculeTestEC2Role
+        iam_type: role
+        policy_name: MoleculeTestEC2Policy
+        state: absent
+        region: "{{ aws_region }}"
+
+    - name: Destroy the role
+      iam_role:
+        name: MoleculeTestEC2Role
+        state: absent
+        region: "{{ aws_region }}"
+
+    # Mandatory configuration for Molecule to function.
+
+    - name: Populate instance config
+      set_fact:
+        instance_conf: {}
+
+    - name: Dump instance config
+      copy:
+        content: "{{ instance_conf | to_json | from_json | molecule_to_yaml | molecule_header }}"
+        dest: "{{ molecule_instance_config }}"
+      when: server.changed | bool
