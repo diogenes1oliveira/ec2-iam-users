@@ -8,3 +8,5 @@
       users:
         - linux_user_1
         - linux_user_2
+      protected_users:
+        - root

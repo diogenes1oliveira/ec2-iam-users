@@ -15,7 +15,7 @@ def test_invalid_parameters(shell):
     print(cmd)
     assert 'Unable to locate credentials' not in cmd.stdout
     assert CODES[cmd.rc] == 'BAD_VALUE'
-
+    return
     cmd = shell('fetch-public-keys-from-iam', '-g',
                 'invalid group name', 'my-user', ** ENV)
     assert 'Unable to locate credentials' not in cmd.stdout

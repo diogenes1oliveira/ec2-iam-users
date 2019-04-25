@@ -69,7 +69,7 @@
 - name: Fail if the current user is not a protected one
   fail:
     msg: "Protected users: {{ existing_protected_users.stdout_lines }}"
-  when: ansible_ssh_user not in existing_protected_users.stdout_lines
+  when: (ansible_user | d(ansible_user_id)) not in existing_protected_users.stdout_lines
 
 - name: Create the group for the protected users
   group:

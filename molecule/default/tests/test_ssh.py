@@ -34,6 +34,7 @@ def ssh_run(*args, user, key, host='localhost', port=32768):
     args = args or ['whoami']
     process = subprocess.run(ssh_args + args,
                              encoding='utf-8', capture_output=True)
+    print(process)
     if 'Permission denied' in process.stderr:
         raise paramiko.ssh_exception.AuthenticationException
     return SSHResult(process.returncode, process.stdout, process.stderr)
@@ -71,12 +72,13 @@ def test_happy_path(host, shell, ansibler):
         pytest.skip('host is not in ssh group')
         return
 
-    user = 'user1'
+    user = 'linux_user_1'
     with temp_ssh_keys() as keys:
         key1, pub1, key2, pub2 = keys
         fetcher = f'echo "{pub1}"'
 
         with temp_content(ansibler, '/usr/bin/fetch-public-keys-from-iam', fetcher):
+            print(f'user = {user} key1 = {key1}')
             ssh_run(user=user, key=key1)
             with pytest.raises(paramiko.ssh_exception.AuthenticationException):
                 ssh_run(user=user, key=key2)
