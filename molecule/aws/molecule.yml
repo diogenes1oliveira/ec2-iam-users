@@ -21,8 +21,6 @@ provisioner:
       stdout_callback: debug
   lint:
     name: ansible-lint
-  ansible_args:
-    - -vvvvv
 
 verifier:
   name: testinfra

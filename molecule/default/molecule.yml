@@ -9,10 +9,22 @@ lint:
   name: yamllint
 
 platforms:
-  - name: ec2-iam-users-ssh-instance
+  - name: ec2-iam-users-ssh-centos-instance
     groups:
       - ssh
     image: solita/centos-systemd-ssh
+    override_command: false
+    security_opts:
+      - seccomp=unconfined
+    tmpfs:
+      - /run
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+
+  - name: ec2-iam-users-ssh-ubuntu-instance
+    groups:
+      - ssh
+    image: solita/ubuntu-systemd-ssh
     override_command: false
     security_opts:
       - seccomp=unconfined
@@ -27,11 +39,11 @@ platforms:
       - "32768:22"
 
   - name: ec2-iam-users-amazon-instance
+    groups:
+      - no-systemd
     image: amazonlinux:2
     networks:
       - name: ec2-iam-users-network
-    groups:
-      - no-systemd
 
 provisioner:
   name: ansible
@@ -42,6 +54,13 @@ provisioner:
       stdout_callback: debug
   lint:
     name: ansible-lint
+  hostvars:
+    ec2-iam-users-ssh-centos-instance:
+      ansible_user: root
+    ec2-iam-users-ssh-ubuntu-instance:
+      ansible_user: root
+    ec2-iam-users-amazon-instance:
+      ansible_user: root
 
 verifier:
   name: testinfra

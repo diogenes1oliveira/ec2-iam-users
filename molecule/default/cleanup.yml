@@ -1,5 +1,5 @@
 ---
-- name: Clean up
+- name: Clean-up
   hosts: localhost
   connection: local
   tasks:

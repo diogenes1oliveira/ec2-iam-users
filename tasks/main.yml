@@ -1,25 +1,39 @@
 ---
 # tasks file for ec2-iam-users
 
-- name: Enable the epel-relase repo
-  yum:
-    name: epel-release
-    state: present
-  ignore_errors: true
-  register: epel_repo
+- name: Packages for RedHat-like distros
+  when: ansible_os_family == 'RedHat'
+  block:
+    - name: Enable the epel-release repo
+      yum:
+        name: epel-release
+        state: present
+      ignore_errors: true
+      register: epel_repo
 
-- name: Fallback for epel-release on Amazon Linux
-  command: amazon-linux-extras install -y epel
-  when: epel_repo is failed
+    - name: Fallback for epel-release on Amazon Linux
+      command: amazon-linux-extras install -y epel
+      when: epel_repo is failed
 
-- name: Assure essential system packages are installed
-  yum:
-    name:
-      - jq
-      - openssh-server
-      - python-pip
-      - util-linux
-    state: present
+    - name: Assure essential system packages are installed
+      yum:
+        name:
+          - jq
+          - openssh-server
+          - python-pip
+          - util-linux
+        state: present
+
+- name: Packages for Debian-like distros
+  when: ansible_os_family == 'Debian'
+  block:
+    - name: Assure essential system packages are installed
+      apt:
+        name:
+          - jq
+          - openssh-server
+          - python-pip
+        state: present
 
 - name: Assure essential PIP packages are installed
   pip:
@@ -69,7 +83,7 @@
 - name: Fail if the current user is not a protected one
   fail:
     msg: "Protected users: {{ existing_protected_users.stdout_lines }}"
-  when: (ansible_user | d(ansible_user_id)) not in existing_protected_users.stdout_lines
+  when: ansible_user not in existing_protected_users.stdout_lines
 
 - name: Create the group for the protected users
   group:
