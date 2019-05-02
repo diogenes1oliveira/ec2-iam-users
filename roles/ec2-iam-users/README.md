@@ -2,8 +2,7 @@
 
 [![Build Status](https://travis-ci.org/diogenes1oliveira/ec2-iam-users.svg?branch=master)](https://travis-ci.org/diogenes1oliveira/ec2-iam-users)
 
-Ansible role to provide IAM based SSH access to EC2 instances, altogether with
-autosyncing via Lambda.
+Ansible role to provide IAM based SSH access to EC2 instances
 
 This role was originally inspired by this Medium post
 [SSH Authentication with AuthorizedKeysCommand](https://medium.com/@jryancanty/just-in-time-ssh-provisioning-7b20d9736a07).

@@ -1,0 +1,37 @@
+---
+schemaVersion: "2.2"
+description: "Apply an Ansible playbook inside the instance"
+
+parameters:
+  s3Path:
+    type: String
+    description: "Path to the S3 zipfile that contains the playbook"
+  playbookName:
+    type: String
+    description: "Name of the playbook to run inside the zipfile"
+
+mainSteps:
+  - action: "aws:runShellScript"
+    name: CleanUpWorkingDirectory
+    inputs:
+      timeoutSeconds: 60
+      runCommand:
+        - sudo rm -rf /tmp/ec2-iam-users/
+        - mkdir -p /tmp/ec2-iam-users/
+
+  - action: "aws:downloadContent"
+    name: DownloadSourceFromS3
+    inputs:
+      sourceType: S3
+      sourceInfo:
+        path: "{{ s3Path }}"
+      desinationPath: /tmp/ec2-iam-users/packed-role.zip
+
+  - action: "aws:runShellScript"
+    name: RunAnsiblePlaybook
+    inputs:
+      timeoutSeconds: 60
+      workingDirectory: /tmp/ec2-iam-users/
+      runCommand:
+        - unzip packed-role.zip
+        - ansible-playbook -i localhost, "{{ playbookName }}"
