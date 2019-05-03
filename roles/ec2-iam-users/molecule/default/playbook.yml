@@ -4,9 +4,7 @@
   roles:
     - role: ec2-iam-users
       region: sa-east-1
-      linux_group: ssh_iam
-      users:
-        - linux_user_1
-        - linux_user_2
-      protected_users:
-        - root
+      ssh_username: linux_user_1
+      ssh_user_groups:
+        - sudo
+        - docker

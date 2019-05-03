@@ -20,19 +20,6 @@ platforms:
       - /run
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
-
-  - name: ec2-iam-users-ssh-ubuntu-instance
-    groups:
-      - ssh
-    image: solita/ubuntu-systemd-ssh
-    override_command: false
-    security_opts:
-      - seccomp=unconfined
-    tmpfs:
-      - /run
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-
     networks:
       - name: ec2-iam-users-network
     published_ports:

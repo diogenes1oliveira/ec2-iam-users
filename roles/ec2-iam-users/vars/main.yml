@@ -2,7 +2,6 @@
 # vars file for linux-iam-users
 
 ansible_become: true
+# All commands need to be run as root
 
 host_key_path: /etc/ssh/ssh_host_rsa_key
-
-protected_users_group: protected-users

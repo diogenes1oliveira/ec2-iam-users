@@ -8,7 +8,7 @@ usage() {
 ssh-authorize-via-iam
 =====================
 
-Fetches the public SSH keys for a user in the group {{ linux_group }} via IAM.
+Fetches the public SSH keys for the authorized SSH user via IAM.
 
 This script is supposed to be used with AuthorizedKeysCommand.
 
@@ -41,10 +41,8 @@ main() {
     FETCH_COMMAND='fetch-public-keys-from-iam'
   fi
 
-  USERS_IN_GROUP=,$(awk -F ':' '/{{ linux_group }}/{print $4}' /etc/group),
-
-  if ! echo "$USERS_IN_GROUP" | grep -s ",$USERNAME," > /dev/null; then
-    echo "User $USERNAME doesn't belong to group {{ linux_group }}" >&2
+  if [[ "$USERNAME" != {{ ssh_username | quote }} ]]; then
+    echo "User $USERNAME can't login via SSH" >&2
     exit $NOT_FOUND
   fi
 

@@ -1,39 +1,25 @@
 ---
 # tasks file for ec2-iam-users
 
-- name: Packages for RedHat-like distros
-  when: ansible_os_family == 'RedHat'
-  block:
-    - name: Enable the epel-release repo
-      yum:
-        name: epel-release
-        state: present
-      ignore_errors: true
-      register: epel_repo
+- name: Enable the epel-release repo
+  yum:
+    name: epel-release
+    state: present
+  ignore_errors: true
+  register: epel_repo
 
-    - name: Fallback for epel-release on Amazon Linux
-      command: amazon-linux-extras install -y epel
-      when: epel_repo is failed
+- name: Fallback for epel-release on Amazon Linux
+  command: amazon-linux-extras install -y epel
+  when: epel_repo is failed
 
-    - name: Assure essential system packages are installed
-      yum:
-        name:
-          - jq
-          - openssh-server
-          - python-pip
-          - util-linux
-        state: present
-
-- name: Packages for Debian-like distros
-  when: ansible_os_family == 'Debian'
-  block:
-    - name: Assure essential system packages are installed
-      apt:
-        name:
-          - jq
-          - openssh-server
-          - python-pip
-        state: present
+- name: Assure essential system packages are installed
+  yum:
+    name:
+      - jq
+      - openssh-server
+      - python-pip
+      - util-linux
+    state: present
 
 - name: Assure essential PIP packages are installed
   pip:
@@ -70,132 +56,31 @@
   args:
     creates: "{{ host_key_path }}"
 
-- name: Get current protected users
-  shell: |
-    set -o pipefail
-    cat /etc/passwd | \
-      awk -F':' '{print $1}' | \
-      grep -e '^{{ protected_users | join("$' -e '^") }}$' || \
-      true
-  changed_when: false
-  register: existing_protected_users
-
-- name: Fail if the current user is not a protected one
-  fail:
-    msg: "Protected users: {{ existing_protected_users.stdout_lines }}"
-  when: ansible_user not in existing_protected_users.stdout_lines
-
-- name: Create the group for the protected users
+- name: Create the group for the IAM users
   group:
-    name: "{{ protected_users_group }}"
+    name: "{{ item }}"
+    state: present
+  with_items: "{{ ssh_user_groups }}"
+
+- name: Create the remote user
+  user:
+    name: "{{ ssh_username }}"
+    groups: "{{ ssh_user_groups }}"
+    append: true
+    create_home: true
     state: present
 
-- name: Assure the protected users can SSH
-  user:
-    name: "{{ item }}"
-    groups:
-      - "{{ protected_users_group }}"
-    append: true
-  with_items:
-    - "{{ existing_protected_users.stdout_lines }}"
+- name: Creating the privilege separation directory
+  file:
+    path: "/var/run/sshd"
+    state: directory
 
 - name: Test the configuration file
   command: sshd -t
   when: sshd_config is changed
 
 - name: Restart the SSH service if needed
-  systemd:
+  service:
     name: sshd
     state: reloaded
   when: sshd_config is changed and 'no-systemd' not in group_names
-
-- name: Create the group for the IAM users
-  group:
-    name: "{{ linux_group }}"
-    state: present
-
-- name: Grab UID ranges
-  shell: |
-    set -o pipefail
-    cat /etc/login.defs | egrep '^(UID_MIN|UID_MAX)\s+[0-9]+\s*$' | awk '{print $2}'
-  changed_when: false
-  register: uid_range
-
-- name: Set UID range endpoints as facts
-  set_fact:
-    uid_min: "{{ uid_range.stdout_lines | map('int') | min }}"
-    uid_max: "{{ uid_range.stdout_lines | map('int') | max }}"
-
-- name: Fetch existing users in the group
-  shell: |
-    set -o pipefail
-    USERS_IN_GROUP=$(grep {{ linux_group | quote }} /etc/group | cut -d':' -f4 | tr "," "\n")
-    echo "USERS_IN_GROUP =>" "$USERS_IN_GROUP" "<=" >&2
-
-    for USER_NAME in "$USERS_IN_GROUP"; do
-      test -z "$USER_NAME" && continue
-      USER_ID=$(id -u "$USER_NAME")
-      test $? != 0 && echo "failed to grab UID of $USER_NAME" >&2 && continue
-
-      if [[ "$USER_ID" < {{ uid_min | quote }} ]] || [[ "$USER_ID" > {{ uid_max | quote }} ]]; then
-        echo "User $USER_NAME is a system user" >&2
-      else
-        echo "Protected users =>" {{ protected_users | join("\n") | quote }} >&2
-        echo {{ protected_users | join("\n") | quote }} | grep "^${USER_NAME}$"
-        if [[ $? == 0 ]]; then
-          echo "$USER_NAME is a protected user" >&2
-        else
-          echo "$USER_NAME"
-        fi
-      fi
-    done
-  args:
-    executable: /bin/bash
-  changed_when: false
-  register: existing_users
-
-- name: Filter out the protected users or those outside the UID range
-  shell: |
-    set -o pipefail
-    echo "Usernames =>" {{ users | map('quote') | join(" ") }} "<=" >&2
-
-    for USER_NAME in {{ users | map('quote') | join(" ") }}; do
-      test -z "$USER_NAME" && continue
-      echo "Protected users =>" {{ protected_users | join("\n") | quote }} >&2
-      echo {{ protected_users | join("\n") | quote }} | grep "^${USER_NAME}$" >&2
-      if [[ $? == 0 ]]; then
-        echo "$USER_NAME is a protected user" >&2
-        continue
-      fi
-
-      USER_ID=$(id -u "$USER_NAME")
-      if [[ "$?" != 0 ]]; then
-        echo "failed to grab UID of $USER_NAME" >&2
-        echo "$USER_NAME"
-      elif [[ "$USER_ID" < {{ uid_min | quote }} ]] || [[ "$USER_ID" > {{ uid_max | quote }} ]]; then
-        echo "User $USER_NAME is a system user" >&2
-      else
-        echo "$USER_NAME"
-      fi
-    done
-  changed_when: false
-  register: managed_users
-
-- name: Create the users
-  user:
-    name: "{{ item }}"
-    group: "{{ linux_group }}"
-    groups:
-      - "{{ linux_group }}"
-    append: true
-    create_home: true
-    state: present
-  with_items:
-    - "{{ managed_users.stdout_lines }}"
-
-- name: Destroy the unspecified users
-  user:
-    name: "{{ item }}"
-    state: absent
-  with_items:
-    - "{{ existing_users.stdout_lines | difference(managed_users.stdout_lines) }}"

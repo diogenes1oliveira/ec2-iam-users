@@ -1,11 +1,8 @@
 ---
-# defaults file for linux-iam-users
+# default variables for ec2-iam-users
 
 iam_group: devs
 # Name of the group to fetch the users from
-
-linux_group: devs
-# Name of the Linux group that the users will belong to
 
 max_ssh_keys: 5
 # Max number of SSH public keys to fetch from IAM
@@ -13,10 +10,13 @@ max_ssh_keys: 5
 region: sa-east-1
 # Default AWS region
 
-protected_users:
-  - ec2-user
-  - ubuntu
-# Those users will never be touched
+ssh_username: dev
+# User the IAM user will be able to login as
 
-users: []
-# List of users to assure existence
+ssh_user_groups:
+  - sudo
+  - docker
+# Additional groups the user will belong to
+
+default_username: ec2-user
+# Extra user to always be allowed SSH

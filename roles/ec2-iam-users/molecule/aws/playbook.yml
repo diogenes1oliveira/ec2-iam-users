@@ -4,8 +4,7 @@
   roles:
     - role: ec2-iam-users
       region: us-east-2
-      iam_group: iam_group_molecule_test
-      linux_group: developers
-      users:
-        - linux_user_1_molecule_test
-        - linux_user_2_molecule_test
+      ssh_username: linux_user_1
+      ssh_user_groups:
+        - sudo
+        - docker

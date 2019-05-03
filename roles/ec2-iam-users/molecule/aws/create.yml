@@ -199,5 +199,10 @@
       with_items: "{{ lookup('file', molecule_instance_config) | molecule_from_yaml }}"
 
     - name: Wait for boot process to finish
-      pause:
-        minutes: 2
+      command: whoami
+      ignore_errors: true
+      changed_when: false
+      register: this
+      retries: 8
+      delay: 5
+      until: this.rc == 0
