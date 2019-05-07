@@ -20,4 +20,4 @@ install:
   - pipenv install
 
 script:
-  - molecule test
+  - pipenv run molecule test
