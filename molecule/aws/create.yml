@@ -102,6 +102,11 @@
             first
           )}}
 
+    - name: Create the IAM group
+      iam_group:
+        name: molecule_test_devs
+        state: present
+
     - name: Create the role
       iam_role:
         name: MoleculeTestEC2Role

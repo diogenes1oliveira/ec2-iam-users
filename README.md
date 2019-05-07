@@ -30,20 +30,22 @@ No extra role or external module is required.
 iam_group: devs
 # Name of the group to fetch the users from
 
-linux_group: devs
-# Name of the Linux group that the users will belong to
-
 max_ssh_keys: 5
 # Max number of SSH public keys to fetch from IAM
 
 region: sa-east-1
 # Default AWS region
 
-protected_users: # those users will never be touched
-  - ec2-user
-  - ubuntu
+ssh_username: dev
+# User the IAM user will be able to login as
 
-users: [] # list of users to assure existence
+ssh_user_groups:
+  - sudo
+  - docker
+# Additional groups the user will belong to
+
+default_username: ec2-user
+# Extra user to always be allowed SSH
 ```
 
 ```yaml
@@ -54,9 +56,6 @@ ansible_become: true
 
 host_key_path: /etc/ssh/ssh_host_rsa_key
 # Where to store the keys that identify the host
-
-protected_users_group: protected-users
-# group the protected users will belong to
 ```
 
 ## Example Playbook

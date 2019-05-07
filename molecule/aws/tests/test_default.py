@@ -16,7 +16,7 @@ def test_user_of_group(host, iam, temp_keypair):
         this_iam = iam(stack.callback)
         iam_user = 'linux_user_1_molecule_test'
         linux_user = 'linux_user_1'
-        group = 'iam_group_molecule_test'
+        group = 'molecule_test_devs'
         this_iam.add_user(iam_user)
         key1_id = this_iam.add_ssh_key(iam_user, pub1)
 

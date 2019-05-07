@@ -1,5 +1,0 @@
-molecule[docker]
-molecule[ec2]
-paramiko
-boto3
-boto

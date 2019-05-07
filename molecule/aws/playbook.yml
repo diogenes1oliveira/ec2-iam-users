@@ -5,6 +5,7 @@
     - role: ec2-iam-users
       region: us-east-2
       ssh_username: linux_user_1
+      iam_group: molecule_test_devs
       ssh_user_groups:
         - sudo
         - docker

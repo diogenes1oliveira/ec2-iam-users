@@ -49,8 +49,8 @@
         state: absent
       register: group_deletion
       until: group_deletion is not failed
-      delay: 5
-      retries: 3
+      delay: 8
+      retries: 5
 
     - name: Destroy the key pair
       ec2_key:
@@ -71,6 +71,11 @@
         name: MoleculeTestEC2Role
         state: absent
         region: "{{ aws_region }}"
+
+    - name: Destroy the IAM group
+      iam_group:
+        name: molecule_test_devs
+        state: absent
 
     # Mandatory configuration for Molecule to function.
 
