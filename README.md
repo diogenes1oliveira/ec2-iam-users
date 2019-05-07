@@ -15,8 +15,8 @@ This role was originally inspired by this Medium post
 
 ## Controller Requirements
 
-- To install the dependencies on the controller node, run
-  `pip install -r requirements.txt`
+- To install the dependencies on the controller node, use [pipenv](https://github.com/pypa/pipenv)
+  with `pipenv install`
 
 ## Dependencies
 
