@@ -1,0 +1,19 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+awscli = "~=1.16"
+docker = "~=3.7"
+molecule = "~=2.20"
+paramiko = "~=2.4"
+
+[packages]
+boto = "*"
+boto3 = "*"
+botocore = "*"
+ansible = "~=2.7"
+
+[requires]
+python_version = "3.7"
