@@ -17,7 +17,7 @@ install:
   - docker pull solita/centos-systemd-ssh
   - docker pull amazonlinux:2
   - pip install pipenv
-  - pipenv install
+  - pipenv install --dev
 
 script:
   - pipenv run molecule test
